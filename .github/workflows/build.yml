@@ -46,8 +46,13 @@ jobs:
           cargo tauri android init
           cargo tauri android build --apk --target aarch64
 
+      - name: Sign APK
+        run: |
+          keytool -genkey -v -keystore release.keystore -alias horizon -keyalg RSA -keysize 2048 -validity 10000 -storepass 123456 -keypass 123456 -dname "CN=Horizon,O=Launcher,C=RU"
+          $ANDROID_HOME/build-tools/34.0.0/apksigner sign --ks release.keystore --ks-pass pass:123456 --out HorizonLauncher-signed.apk src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: horizon-launcher-apk
-          path: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          name: horizon-launcher-signed
+          path: HorizonLauncher-signed.apk
