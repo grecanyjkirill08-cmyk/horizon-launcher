@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#0a0a0f" />
+    <title>Horizon Launcher</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <div id="app">
+        <section class="screen active" id="screen-home">
+            <header class="top-bar">
+                <div class="logo"><span class="logo-mark">◢◤</span><span class="logo-text">Horizon</span></div>
+                <button class="icon-btn" id="btn-refresh">⟳</button>
+            </header>
+            <div class="hero-card">
+                <div class="hero-bg"></div>
+                <div class="hero-content">
+                    <div class="hero-label">Minecraft Bedrock Edition</div>
+                    <div class="hero-title" id="mc-version">Проверка версии…</div>
+                    <div class="hero-status" id="mc-status"><span class="status-dot"></span><span>Проверка установки…</span></div>
+                </div>
+            </div>
+            <div class="section-title"><span>Ваши сборки</span><button class="text-btn" id="btn-new-profile">+ Новая</button></div>
+            <div class="cards-scroll" id="profiles-list"></div>
+            <div class="play-button-wrap">
+                <button class="play-btn" id="btn-play" disabled>
+                    <span class="play-icon">▶</span><span class="play-label">Играть</span><span class="play-sub" id="play-profile-name">—</span>
+                </button>
+            </div>
+        </section>
+
+        <section class="screen" id="screen-mods">
+            <header class="top-bar">
+                <div class="screen-title">Аддоны</div>
+                <button class="icon-btn" id="btn-import-addon">⟰</button>
+            </header>
+            <div class="filter-row">
+                <button class="filter-chip active" data-filter="all">Все</button>
+                <button class="filter-chip" data-filter="resources">Ресурс-паки</button>
+                <button class="filter-chip" data-filter="data">Behavior</button>
+            </div>
+            <div class="mods-list" id="mods-list"><div class="empty-state">Загрузка аддонов…</div></div>
+        </section>
+
+        <section class="screen" id="screen-profiles">
+            <header class="top-bar">
+                <div class="screen-title">Профили</div>
+                <button class="icon-btn" id="btn-add-profile">+</button>
+            </header>
+            <div class="profiles-list" id="profiles-full-list"><div class="empty-state">Загрузка…</div></div>
+        </section>
+
+        <section class="screen" id="screen-settings">
+            <header class="top-bar"><div class="screen-title">Настройки</div></header>
+            <div class="settings-group">
+                <div class="setting-row"><div class="setting-label">Версия Minecraft</div><div class="setting-value" id="settings-mc-version">—</div></div>
+                <div class="setting-row"><div class="setting-label">Статус установки</div><div class="setting-value" id="settings-mc-status">—</div></div>
+                <div class="setting-row"><div class="setting-label">Активный профиль</div><div class="setting-value" id="settings-active-profile">—</div></div>
+            </div>
+            <div class="settings-footer">Horizon Launcher v0.1.0 • Rust + Tauri</div>
+        </section>
+
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-screen="home">🏠<span>Главная</span></button>
+            <button class="nav-item" data-screen="mods">📦<span>Аддоны</span></button>
+            <button class="nav-item" data-screen="profiles">👤<span>Профили</span></button>
+            <button class="nav-item" data-screen="settings">⚙<span>Настройки</span></button>
+        </nav>
+
+        <div class="modal-overlay" id="modal-new-profile">
+            <div class="modal">
+                <div class="modal-title">Новый профиль</div>
+                <input type="text" class="input" id="input-profile-name" placeholder="Название сборки" />
+                <button class="btn-secondary" id="btn-pick-folder" style="width:100%;margin-bottom:12px;">📁 Выбрать папку данных Minecraft (com.mojang)</button>
+                <div class="input" id="display-picked-folder" style="color:var(--text-2);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Папка не выбрана</div>
+                <div class="modal-actions">
+                    <button class="btn-secondary" id="btn-modal-cancel">Отмена</button>
+                    <button class="btn-primary" id="btn-modal-create">Создать</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-overlay" id="modal-progress">
+            <div class="modal">
+                <div class="modal-title">Загрузка…</div>
+                <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width: 0%"></div></div>
+                <div class="progress-text" id="progress-text">0%</div>
+            </div>
+        </div>
+
+        <div class="toast-wrap" id="toast-wrap"></div>
+    </div>
+    <script type="module" src="app.js"></script>
+</body>
+          </html>
+         
