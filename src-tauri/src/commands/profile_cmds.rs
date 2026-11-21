@@ -41,10 +41,8 @@ pub fn delete_profile(id: String, state: State<ProfileState>) -> Result<(), Stri
 #[command]
 pub async fn pick_game_folder(app: AppHandle) -> Result<Option<String>, String> {
     let api = app.android_fs();
-    let selected = api.show_manage_dir_dialog(None).map_err(|e| e.to_string())?;
+    let selected = api.file_picker().pick_dir(None, true).map_err(|e| e.to_string())?;
     let Some(dir_uri) = selected else { return Ok(None); };
-    if let Err(e) = api.take_persistable_uri_permission(&dir_uri) {
-        eprintln!("Failed to persist URI permission: {}", e);
-    }
-    Ok(Some(dir_uri.to_string()))
+    let json = serde_json::to_string(&dir_uri).map_err(|e| e.to_string())?;
+    Ok(Some(json))
 }
