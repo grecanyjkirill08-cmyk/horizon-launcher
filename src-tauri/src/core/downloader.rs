@@ -42,7 +42,8 @@ pub async fn download_profile_bundle(app: AppHandle, urls: Vec<String>, dest_dir
     tokio::fs::create_dir_all(dest_dir).await?;
     let mut paths = Vec::with_capacity(urls.len());
     for (i, url) in urls.iter().enumerate() {
-        let filename = url.rsplit('/').next().unwrap_or(&format!("bundle_part_{}.bin", i));
+        let default_name = format!("bundle_part_{}.bin", i);
+        let filename = url.rsplit('/').next().unwrap_or(&default_name);
         let dest = dest_dir.join(filename);
         paths.push(download_file(app.clone(), url, &dest).await?);
     }
