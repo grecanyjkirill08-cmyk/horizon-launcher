@@ -2,7 +2,7 @@ use crate::commands::profile_cmds::ProfileState;
 use crate::core::installer::{install_addon, install_mcaddon};
 use crate::models::InstalledPack;
 use tauri::{command, AppHandle, State};
-use tauri_plugin_android_fs::{AndroidFsExt, FileAccessMode, FileUri};
+use tauri_plugin_android_fs::{AndroidFsExt, FileAccessMode, FsUri};
 
 #[command]
 pub fn list_packs(app: AppHandle, profile_id: String, state: State<ProfileState>) -> Result<Vec<InstalledPack>, String> {
@@ -26,8 +26,8 @@ pub fn install_addon_from_uri(app: AppHandle, profile_id: String, archive_uri: S
     let profile = mgr.get(&profile_id).ok_or_else(|| "Profile not found".to_string())?;
 
     let api = app.android_fs();
-    let archive_uri: FileUri = archive_uri.into();
-    let root_uri: FileUri = profile.root_uri.clone().into();
+    let archive_uri: FsUri = serde_json::from_str(&archive_uri).map_err(|e| e.to_string())?;
+    let root_uri: FsUri = serde_json::from_str(&profile.root_uri).map_err(|e| e.to_string())?;
     let resource_uri = api.create_dir_all(&root_uri, "resource_packs").map_err(|e| e.to_string())?;
     let behavior_uri = api.create_dir_all(&root_uri, "behavior_packs").map_err(|e| e.to_string())?;
 
@@ -54,8 +54,8 @@ pub fn install_addon_from_uri(app: AppHandle, profile_id: String, archive_uri: S
 #[command]
 pub fn pick_and_install_addon(app: AppHandle, profile_id: String, state: State<ProfileState>) -> Result<Vec<InstalledPack>, String> {
     let api = app.android_fs();
-    let selected = api.show_open_file_dialog(&["application/zip", "application/octet-stream", "*/*"], false).map_err(|e| e.to_string())?;
-    let Some(uris) = selected else { return Ok(Vec::new()); };
-    let Some(archive_uri) = uris.into_iter().next() else { return Ok(Vec::new()); };
-    install_addon_from_uri(app, profile_id, archive_uri.to_string(), state)
-}
+    let selected = api.file_picker().pick_files(None, &["*/*"], false).map_err(|e| e.to_string())?;
+    let Some(archive_uri) = selected.into_iter().next() else { return Ok(Vec::new()); };
+    let json = serde_json::to_string(&archive_uri).map_err(|e| e.to_string())?;
+    install_addon_from_uri(app, profile_id, json, state)
+        }
