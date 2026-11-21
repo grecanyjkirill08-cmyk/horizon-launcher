@@ -20,7 +20,11 @@ where F: FnOnce(&mut JNIEnv, &JObject) -> Result<R, JniError> {
     let vm = unsafe { jni::JavaVM::from_raw(ctx.vm().cast()) }?;
     let mut env = vm.attach_current_thread()?;
     let activity = unsafe { JObject::from_raw(ctx.context().cast()) };
-    f(&mut env, &activity)
+    let res = f(&mut env, &activity);
+    if env.exception_check().unwrap_or(false) {
+        let _ = env.exception_clear();
+    }
+    res
 }
 
 #[cfg(target_os = "android")]
@@ -30,7 +34,10 @@ pub fn is_minecraft_installed() -> Result<bool, JniError> {
         let pkg = env.new_string(MINECRAFT_PACKAGE)?;
         match env.call_method(&pm, "getPackageInfo", "(Ljava/lang/String;I)Landroid/content/pm/PackageInfo;", &[(&pkg).into(), JValue::Int(0)]) {
             Ok(_) => Ok(true),
-            Err(_) => Ok(false),
+            Err(_) => {
+                let _ = env.exception_clear();
+                Ok(false)
+            }
         }
     })
 }
@@ -40,8 +47,16 @@ pub fn get_minecraft_version() -> Result<String, JniError> {
     with_env_and_activity(|env, activity| {
         let pm = env.call_method(activity, "getPackageManager", "()Landroid/content/pm/PackageManager;", &[])?.l()?;
         let pkg = env.new_string(MINECRAFT_PACKAGE)?;
-        let info = env.call_method(&pm, "getPackageInfo", "(Ljava/lang/String;I)Landroid/content/pm/PackageInfo;", &[(&pkg).into(), JValue::Int(0)])?.l()?;
+        let info = match env.call_method(&pm, "getPackageInfo", "(Ljava/lang/String;I)Landroid/content/pm/PackageInfo;", &[(&pkg).into(), JValue::Int(0)]) {
+            Ok(v) => v.l()?,
+            Err(_) => {
+                let _ = env.exception_clear();
+                return Ok("Не установлен".to_string());
+            }
+        };
+        if info.is_null() { return Ok("Не установлен".to_string()); }
         let vn = env.get_field(&info, "versionName", "Ljava/lang/String;")?.l()?;
+        if vn.is_null() { return Ok("Неизвестно".to_string()); }
         Ok(env.get_string(&JString::from(vn))?.into())
     })
 }
