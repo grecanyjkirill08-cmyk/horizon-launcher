@@ -54,7 +54,7 @@ pub fn install_addon_from_uri(app: AppHandle, profile_id: String, archive_uri: S
 #[command]
 pub fn pick_and_install_addon(app: AppHandle, profile_id: String, state: State<ProfileState>) -> Result<Vec<InstalledPack>, String> {
     let api = app.android_fs();
-    let selected = api.file_picker().pick_files(None, &["*/*"], false).map_err(|e| e.to_string())?;
+    let selected = api.picker().pick_files(None, &["*/*"], false).map_err(|e| e.to_string())?;
     let Some(archive_uri) = selected.into_iter().next() else { return Ok(Vec::new()); };
     let json = serde_json::to_string(&archive_uri).map_err(|e| e.to_string())?;
     install_addon_from_uri(app, profile_id, json, state)
