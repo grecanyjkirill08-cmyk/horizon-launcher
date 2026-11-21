@@ -2,11 +2,12 @@ use crate::core::manifest::{determine_pack_type, parse_manifest_from_zip, Manife
 use crate::models::{InstalledPack, PackType};
 use std::io;
 use tauri::AppHandle;
-use tauri_plugin_android_fs::{AndroidFsExt, Entry, FileAccessMode, FileUri};
+use tauri_plugin_android_fs::{AndroidFsExt, FileAccessMode, FsUri};
 
 #[derive(Debug, thiserror::Error)]
 pub enum InstallError {
     #[error("Manifest error: {0}")] Manifest(#[from] ManifestError),
+    #[error("ZIP error: {0}")] Zip(#[from] zip::result::ZipError),
     #[error("IO error: {0}")] Io(#[from] io::Error),
     #[error("Android FS error: {0}")] AndroidFs(String),
 }
@@ -15,7 +16,7 @@ impl From<tauri_plugin_android_fs::Error> for InstallError {
     fn from(e: tauri_plugin_android_fs::Error) -> Self { InstallError::AndroidFs(e.to_string()) }
 }
 
-pub fn install_addon(app: &AppHandle, archive_uri: &FileUri, target_dir_uri: &FileUri) -> Result<InstalledPack, InstallError> {
+pub fn install_addon(app: &AppHandle, archive_uri: &FsUri, target_dir_uri: &FsUri) -> Result<InstalledPack, InstallError> {
     let api = app.android_fs();
     let file = api.open_file(archive_uri, FileAccessMode::Read)?;
     let mut archive = zip::ZipArchive::new(file)?;
@@ -31,7 +32,7 @@ pub fn install_addon(app: &AppHandle, archive_uri: &FileUri, target_dir_uri: &Fi
             let _ = api.create_dir_all(&pack_dir_uri, dir_path);
             continue;
         }
-        let new_file_uri = api.create_file(&pack_dir_uri, &entry_name, None)?;
+        let new_file_uri = api.create_new_file(&pack_dir_uri, &entry_name, None)?;
         let mut buf = Vec::new();
         io::copy(&mut entry, &mut buf)?;
         api.write(&new_file_uri, &buf)?;
@@ -40,28 +41,29 @@ pub fn install_addon(app: &AppHandle, archive_uri: &FileUri, target_dir_uri: &Fi
     Ok(InstalledPack {
         manifest,
         pack_type,
-        uri: pack_dir_uri.to_string(),
-        source_archive: archive_uri.to_string(),
+        uri: serde_json::to_string(&pack_dir_uri).unwrap_or_default(),
+        source_archive: serde_json::to_string(archive_uri).unwrap_or_default(),
     })
-}
+                                               }
 pub fn install_mcaddon(
     app: &AppHandle,
-    archive_uri: &FileUri,
-    resource_packs_uri: &FileUri,
-    behavior_packs_uri: &FileUri,
+    archive_uri: &FsUri,
+    resource_packs_uri: &FsUri,
+    behavior_packs_uri: &FsUri,
 ) -> Result<Vec<InstalledPack>, InstallError> {
     let api = app.android_fs();
     let file = api.open_file(archive_uri, FileAccessMode::Read)?;
     let mut archive = zip::ZipArchive::new(file)?;
-    let temp_dir_uri = api.get_private_storage().cache_dir()
-        .create_dir_all(&format!("mcaddon_{}", uuid::Uuid::new_v4()))?;
+    let temp_dir_uri = api.private_storage()
+        .resolve_dir_uri(tauri_plugin_android_fs::PrivateDir::Cache, &format!("mcaddon_{}", uuid::Uuid::new_v4()))?;
+    api.create_dir_all(&temp_dir_uri, "")?;
     let mut installed = Vec::new();
 
     for i in 0..archive.len() {
         let mut entry = archive.by_index(i)?;
         let name = entry.name().to_string();
         if name.ends_with(".mcpack") || name.ends_with(".zip") {
-            let temp_file_uri = api.create_file(&temp_dir_uri, &name, None)?;
+            let temp_file_uri = api.create_new_file(&temp_dir_uri, &name, None)?;
             let mut buf = Vec::new();
             io::copy(&mut entry, &mut buf)?;
             api.write(&temp_file_uri, &buf)?;
@@ -85,4 +87,4 @@ pub fn install_mcaddon(
         return Err(InstallError::Manifest(ManifestError::NotFound));
     }
     Ok(installed)
-}
+        }
