@@ -44,6 +44,7 @@ jobs:
       - name: Initialize Android project & Build APK
         run: |
           cargo tauri android init
+          python3 -c 'p="src-tauri/gen/android/app/src/main/AndroidManifest.xml"; s=open(p).read().replace("<application", "<queries><package android:name=\"com.mojang.minecraftpe\" /></queries>\n    <application"); open(p,"w").write(s)'
           cargo tauri android build --apk --target aarch64
 
       - name: Sign APK
