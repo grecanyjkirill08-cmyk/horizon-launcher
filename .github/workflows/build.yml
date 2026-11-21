@@ -36,6 +36,11 @@ jobs:
       - name: Install Tauri CLI
         run: cargo install tauri-cli --version "^2.0.0"
 
+      - name: Generate default app icons
+        run: |
+          python3 -c 'import zlib, struct; w=h=512; raw=b"".join(b"\x00"+b"\x4a\xde\x80\xff"*w for _ in range(h)); ihdr=struct.pack(">IIBBBBB",w,h,8,6,0,0,0); png=b"\x89PNG\r\n\x1a\n"+struct.pack(">I",13)+b"IHDR"+ihdr+struct.pack(">I",zlib.crc32(b"IHDR"+ihdr)&0xffffffff)+struct.pack(">I",len(zlib.compress(raw)))+b"IDAT"+zlib.compress(raw)+struct.pack(">I",zlib.crc32(b"IDAT"+zlib.compress(raw))&0xffffffff)+b"\x00\x00\x00\x00IEND\xaeB`\x82"; open("icon.png","wb").write(png)'
+          cargo tauri icon icon.png
+
       - name: Initialize Android project & Build APK
         run: |
           cargo tauri android init
