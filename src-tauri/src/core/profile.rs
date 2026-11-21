@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::io;
 use tauri::AppHandle;
-use tauri_plugin_android_fs::{AndroidFsExt, Entry, FileAccessMode, FileUri};
+use tauri_plugin_android_fs::{AndroidFsExt, Entry, FileAccessMode, FsUri};
 
 #[derive(Debug, thiserror::Error)]
 pub enum ProfileError {
@@ -97,7 +97,7 @@ impl ProfileManager {
     pub fn scan_packs(&self, app: &AppHandle, profile_id: &str) -> Result<Vec<InstalledPack>, ProfileError> {
         let profile = self.get(profile_id).ok_or_else(|| ProfileError::NotFound(profile_id.to_string()))?;
         let api = app.android_fs();
-        let root_uri: FileUri = profile.root_uri.clone().into();
+        let root_uri: FsUri = serde_json::from_str(&profile.root_uri)?;
 
         let resource_uri = api.create_dir_all(&root_uri, "resource_packs")?;
         let behavior_uri = api.create_dir_all(&root_uri, "behavior_packs")?;
@@ -107,7 +107,7 @@ impl ProfileManager {
             let entries = match api.read_dir(&dir_uri) { Ok(e) => e, Err(_) => continue };
             for entry in entries {
                 let pack_dir_uri = match entry { Entry::Dir { uri, .. } => uri, _ => continue };
-                let manifest_uri = api.resolve_uri(&pack_dir_uri, "manifest.json")?;
+                let manifest_uri = api.resolve_dir_uri(&pack_dir_uri, "manifest.json")?;
                 let file = match api.open_file(&manifest_uri, FileAccessMode::Read) {
                     Ok(f) => f,
                     Err(_) => continue,
@@ -116,11 +116,11 @@ impl ProfileManager {
                 result.push(InstalledPack {
                     manifest,
                     pack_type: pack_type.clone(),
-                    uri: pack_dir_uri.to_string(),
+                    uri: serde_json::to_string(&pack_dir_uri).unwrap_or_default(),
                     source_archive: String::new(),
                 });
             }
         }
         Ok(result)
     }
-}
+            }
