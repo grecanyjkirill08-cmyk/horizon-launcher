@@ -55,7 +55,7 @@ pub fn install_mcaddon(
     let file = api.open_file(archive_uri, FileAccessMode::Read)?;
     let mut archive = zip::ZipArchive::new(file)?;
     let temp_dir_uri = api.private_storage()
-        .resolve_dir_uri(tauri_plugin_android_fs::PrivateDir::Cache, &format!("mcaddon_{}", uuid::Uuid::new_v4()))?;
+        .resolve_uri(tauri_plugin_android_fs::PrivateDir::Cache, &format!("mcaddon_{}", uuid::Uuid::new_v4()))?;
     api.create_dir_all(&temp_dir_uri, "")?;
     let mut installed = Vec::new();
 
